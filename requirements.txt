@@ -3,3 +3,4 @@ requests
 whisperx
 sounddevice
 soundfile
+pynput
