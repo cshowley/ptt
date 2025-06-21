@@ -6,40 +6,43 @@ from pynput import keyboard
 
 def record_audio(filename, fs=44100):
     """
-    Records audio while right shift is pressed. Saves only if pressed >= 0.5 seconds.
-
-    :param filename: Name of the output .wav file.
-    :param fs: Sampling frequency (default is 44100 Hz).
+    Records audio only while Right Shift is pressed. Saves only if held ≥ 0.5 seconds.
     """
-    print("Press and hold right shift to record. Release to stop.")
+    print("Press and hold Right Shift (Shift_R) to record. Release to stop.")
     audio_data = []
-    is_recording = [True]
+    is_recording = [False]
     start_time = [None]
 
     def on_press(key):
         if key == keyboard.Key.shift_r:
-            if start_time[0] is None:
-                start_time[0] = time.time()  # Record when right shift is pressed
+            is_recording[0] = True
+            start_time[0] = time.time()
 
     def on_release(key):
         if key == keyboard.Key.shift_r:
-            is_recording[0] = False  # Stop recording
+            is_recording[0] = False
 
-    # Set up keyboard listener
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
 
-    # Start recording
+    # Wait for Right Shift to be pressed
+    while not is_recording[0]:
+        time.sleep(0.01)
+
+    # Start audio capture only after Right Shift is pressed
     with sd.InputStream(samplerate=fs, channels=2, dtype='float32') as stream:
         stream.start()
+        print("Recording...")
+
         while is_recording[0]:
             data, overflowed = stream.read(1024)
             if overflowed:
                 print("Warning: Audio buffer overflowed")
             audio_data.append(data.copy())
+
         stream.stop()
 
-    # Calculate duration
+    # Finalize and save if duration is sufficient
     if start_time[0] is not None:
         duration = time.time() - start_time[0]
         if duration >= 0.5 and len(audio_data) > 0:
