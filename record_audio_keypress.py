@@ -6,23 +6,23 @@ from pynput import keyboard
 
 def record_audio(filename, fs=44100):
     """
-    Records audio while spacebar is pressed. Saves only if pressed >= 0.5 seconds.
+    Records audio while right shift is pressed. Saves only if pressed >= 0.5 seconds.
 
     :param filename: Name of the output .wav file.
     :param fs: Sampling frequency (default is 44100 Hz).
     """
-    print("Press and hold the spacebar to record. Release to stop.")
+    print("Press and hold right shift to record. Release to stop.")
     audio_data = []
     is_recording = [True]
     start_time = [None]
 
     def on_press(key):
-        if key == keyboard.Key.space:
+        if key == keyboard.Key.shift_r:
             if start_time[0] is None:
-                start_time[0] = time.time()  # Record when spacebar is pressed
+                start_time[0] = time.time()  # Record when right shift is pressed
 
     def on_release(key):
-        if key == keyboard.Key.space:
+        if key == keyboard.Key.shift_r:
             is_recording[0] = False  # Stop recording
 
     # Set up keyboard listener
