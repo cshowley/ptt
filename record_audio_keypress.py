@@ -55,7 +55,7 @@ def record_audio(filename, fs=44100):
     else:
         print("No valid key press detected.")
 
-def transcribe_audio(output_filename()):
+def transcribe_audio(output_filename):
     return
 
 def format_request():

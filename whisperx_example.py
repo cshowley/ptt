@@ -1,8 +1,16 @@
 import whisperx
 import gc
+import torch
 
-device = "cuda"
-audio_file = "audio.mp3"
+# Set device
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+
+audio_file = output_file
 batch_size = 16 # reduce if low on GPU mem
 compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
 
