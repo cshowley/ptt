@@ -55,11 +55,23 @@ def record_audio(filename, fs=44100):
     else:
         print("No valid key press detected.")
 
+def transcribe_audio(output_filename()):
+    return
+
+def format_request():
+    return
+
+def speak_reply():
+    return
+
 if __name__ == "__main__":
     try:
         while True:
             timestamp = int(time.time())
             output_filename = f"output_{timestamp}.wav"
             record_audio(output_filename)
+            # transcribe_audio(output_filename) # load recording and transcribe to text file
+            # format_request() # append text file to llm conversation history, send api request
+            # speak_reply() # convert request response to speech
     except KeyboardInterrupt:
         print("\nRecording loop stopped by user.")
