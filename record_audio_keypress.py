@@ -104,25 +104,37 @@ def format_request(transcription):
     print(text_response)
     return text_response
 
-import shlex
+
 def speak_reply(text_response):
-    # use mpg123 to stream audio returned from curl request
-    curl_request = f"""curl -H "Authorization: Bearer {os.environ['VENICE_API_KEY']}" \
-            -H "Content-Type: application/json" \
-            -H "Accept-Encoding: identity" \
-            -d '{{
+    api_key = os.environ['VENICE_API_KEY']
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept-Encoding": "identity"
+    }
+    data = {
         "model": "tts-kokoro",
         "response_format": "mp3",
         "speed": 1.2,
-        "streaming": true,
+        "streaming": True,
         "voice": "af_sky",
-        "input": "{text_response.replace("'","")}"
-        }}' \
-            https://api.venice.ai/api/v1/audio/speech | mpg123 -"""
-    print(curl_request)
-    subprocess.run(curl_request, shell=True
-    )
+        "input": text_response
+    }
 
+    response = requests.post(
+        "https://api.venice.ai/api/v1/audio/speech",
+        headers=headers,
+        json=data,
+        stream=True
+    )
+    response.raise_for_status()
+
+    mpg123 = subprocess.Popen(['mpg123', '-'], stdin=subprocess.PIPE)
+    for chunk in response.iter_content(chunk_size=8192):
+        if chunk:
+            mpg123.stdin.write(chunk)
+    mpg123.stdin.close()
+    mpg123.wait()
 
     return
 
