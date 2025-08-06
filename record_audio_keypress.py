@@ -6,6 +6,10 @@ from pynput import keyboard
 import whisperx
 import gc
 import torch
+from api_call import *
+import subprocess
+from dotenv import load_dotenv; load_dotenv()
+import json
 
 
 def record_audio(filename, fs=44100):
@@ -59,6 +63,7 @@ def record_audio(filename, fs=44100):
     else:
         print("No valid key press detected.")
 
+model = whisperx.load_model("large-v2", 'cpu', compute_type='int8')
 def transcribe_audio(audio_file):
     # Set device
     if torch.cuda.is_available():
@@ -73,7 +78,7 @@ def transcribe_audio(audio_file):
     print('loading model')
     # 1. Transcribe with original whisper (batched)
     # model = whisperx.load_model("large-v2", device=device, compute_type=compute_type)
-    model = whisperx.load_model("large-v2", 'cpu', compute_type='int8')
+    # model = whisperx.load_model("large-v2", 'cpu', compute_type='int8')
 
     # save model to local path (optional)
     # model_dir = "/path/"
@@ -92,12 +97,33 @@ def transcribe_audio(audio_file):
     # result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
 
     # print(result["segments"]) # after alignment
-    return
+    return result["segments"][0]['text'] 
 
-def format_request():
-    return
+def format_request(transcription):
+    text_response = make_request(transcription)
+    print(text_response)
+    return text_response
 
-def speak_reply():
+import shlex
+def speak_reply(text_response):
+    # use mpg123 to stream audio returned from curl request
+    curl_request = f"""curl -H "Authorization: Bearer {os.environ['VENICE_API_KEY']}" \
+            -H "Content-Type: application/json" \
+            -H "Accept-Encoding: identity" \
+            -d '{{
+        "model": "tts-kokoro",
+        "response_format": "mp3",
+        "speed": 1.2,
+        "streaming": true,
+        "voice": "af_sky",
+        "input": "{json.dumps(text_response)[1:-1]}"
+        }}' \
+            https://api.venice.ai/api/v1/audio/speech | mpg123 -"""
+    print(curl_request)
+    subprocess.run(curl_request, shell=True
+    )
+
+
     return
 
 if __name__ == "__main__":
@@ -106,8 +132,8 @@ if __name__ == "__main__":
             timestamp = int(time.time())
             output_filename = f"output_{timestamp}.wav"
             record_audio(output_filename)
-            transcribe_audio(output_filename) # load recording and transcribe to text file
-            # format_request() # append text file to llm conversation history, send api request
-            # speak_reply() # convert request response to speech
+            transcription = transcribe_audio(output_filename) # load recording and transcribe to text file
+            text_response = format_request(transcription) # append text file to llm conversation history, send api request
+            speak_reply(text_response) # convert request response to speech
     except KeyboardInterrupt:
         print("\nRecording loop stopped by user.")
