@@ -116,7 +116,7 @@ def speak_reply(text_response):
         "speed": 1.2,
         "streaming": true,
         "voice": "af_sky",
-        "input": "{json.dumps(text_response)[1:-1]}"
+        "input": "{text_response.replace("'","")}"
         }}' \
             https://api.venice.ai/api/v1/audio/speech | mpg123 -"""
     print(curl_request)
