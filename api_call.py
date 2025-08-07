@@ -38,7 +38,10 @@ def make_request(query, model='venice-uncensored'):
                 "content": query
             }
         ],
-        "venice_parameters": {"include_venice_system_prompt": False},
+        "venice_parameters": {
+            "include_venice_system_prompt": True,
+            "enable_web_search": "auto"
+            },
     }
     headers = {
         "Authorization": f"Bearer {os.environ['VENICE_API_KEY']}",

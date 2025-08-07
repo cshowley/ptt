@@ -97,6 +97,8 @@ def transcribe_audio(audio_file):
     # result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
 
     # print(result["segments"]) # after alignment
+    # remove audio file
+    os.remove(audio_file)
     return result["segments"][0]['text'] 
 
 def format_request(transcription):
@@ -105,6 +107,36 @@ def format_request(transcription):
     return text_response
 
 
+import re
+
+def chunk_text(text, max_chunk_size=4096):
+    # Define a regex pattern to match sentence-ending punctuation
+    sentence_endings = re.compile(r'[.!?]\s*|\n')
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        # Find the next sentence-ending punctuation within the max_chunk_size
+        end = start + max_chunk_size
+        match = sentence_endings.search(text, start, end)
+
+        if match:
+            # If a sentence ending is found, use it as the end of the chunk
+            end = match.end()
+        else:
+            # If no sentence ending is found, find the last space within the max_chunk_size
+            end = text.rfind(' ', start, end)
+            if end == -1:
+                # If no space is found, just use the max_chunk_size
+                end = start + max_chunk_size
+
+        # Extract the chunk and add it to the list
+        chunk = text[start:end].strip()
+        chunks.append(chunk)
+        start = end
+
+    return chunks
+
 def speak_reply(text_response):
     api_key = os.environ['VENICE_API_KEY']
     headers = {
@@ -112,29 +144,33 @@ def speak_reply(text_response):
         "Content-Type": "application/json",
         "Accept-Encoding": "identity"
     }
-    data = {
-        "model": "tts-kokoro",
-        "response_format": "mp3",
-        "speed": 1.2,
-        "streaming": True,
-        "voice": "af_sky",
-        "input": text_response
-    }
+    
+    chunks = chunk_text(text_response)
+    for chunk in chunks:
+        print(len(chunk))
+        data = {
+            "model": "tts-kokoro",
+            "response_format": "mp3",
+            "speed": 1.2,
+            "streaming": True,
+            "voice": "af_sky",
+            "input": chunk
+        }
 
-    response = requests.post(
-        "https://api.venice.ai/api/v1/audio/speech",
-        headers=headers,
-        json=data,
-        stream=True
-    )
-    response.raise_for_status()
+        response = requests.post(
+            "https://api.venice.ai/api/v1/audio/speech",
+            headers=headers,
+            json=data,
+            stream=True
+        )
+        response.raise_for_status()
 
-    mpg123 = subprocess.Popen(['mpg123', '-'], stdin=subprocess.PIPE)
-    for chunk in response.iter_content(chunk_size=8192):
-        if chunk:
-            mpg123.stdin.write(chunk)
-    mpg123.stdin.close()
-    mpg123.wait()
+        mpg123 = subprocess.Popen(['mpg123', '-'], stdin=subprocess.PIPE)
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                mpg123.stdin.write(chunk)
+        mpg123.stdin.close()
+        mpg123.wait()
 
     return
 
