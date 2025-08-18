@@ -84,7 +84,7 @@ def transcribe_audio(audio_file):
     return result["segments"][0]['text'] 
 
 def format_request(transcription):
-    text_response = make_request(transcription)
+    text_response = make_request(transcription, chat_history='chat_history.json')
     print(text_response)
     return text_response
 

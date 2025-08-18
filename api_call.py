@@ -24,7 +24,32 @@ url = "https://api.venice.ai/api/v1/chat/completions"
 #         doc = f.read()
 #     query += f'\n\n{doc}'
 
-def make_request(query, model='venice-uncensored'):
+
+def read_history(chat_path):
+    # Load full chat history
+    if chat_path:
+        if os.path.exists(chat_path):
+            with open(chat_path, "r", encoding="utf-8") as f:
+                chat = json.load(f)
+        else:
+            chat = []
+            if chat_path:
+                open(chat_path, "w").close()
+    else:
+        chat = []
+    return chat
+
+
+def write_history(chat, chat_path, response_message):
+    # Append LLM response to chat history
+    chat.append({"role": "assistant", "content": response_message})
+    with open(chat_path, "w", encoding="utf-8") as f:
+        json.dump(chat, f, indent=4)
+
+
+def make_request(query, model='venice-uncensored', chat_history=None):
+    messages = read_history(chat_history)
+    messages.append({"role": "user", "content": query})
     payload = {
         "model": model,
         "frequency_penalty": 0,
@@ -32,12 +57,7 @@ def make_request(query, model='venice-uncensored'):
         "presence_penalty": 0,
         "temperature": 0.3,
         "top_p": 1,
-        "messages": [
-            {
-                "role": 'user',
-                "content": query
-            }
-        ],
+        "messages": messages,
         "venice_parameters": {
             "include_venice_system_prompt": True,
             "enable_web_search": "auto"
@@ -49,5 +69,7 @@ def make_request(query, model='venice-uncensored'):
     }
 
     response = requests.request("POST", url, json=payload, headers=headers)
-
-    return response.json()['choices'][0]['message']['content']
+    response_message = response.json()['choices'][0]['message']['content']
+    if chat_history:
+        write_history(messages, chat_history, response_message)
+    return response_message
