@@ -2026,6 +2026,7 @@ name = "ptt"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "nltk" },
     { name = "pynput" },
     { name = "python-dotenv" },
     { name = "sounddevice" },
@@ -2035,6 +2036,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "nltk", specifier = ">=3.9.1" },
     { name = "pynput", specifier = ">=1.8.1" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sounddevice", specifier = ">=0.5.2" },

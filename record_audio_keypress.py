@@ -9,6 +9,7 @@ from api_call import *
 import subprocess
 from dotenv import load_dotenv; load_dotenv()
 import re
+from nltk.tokenize import sent_tokenize
 
 # load speech-to-text model
 model = whisperx.load_model("large-v2", 'cpu', compute_type='int8')
@@ -76,6 +77,8 @@ def transcribe_audio(audio_file):
     print('loading audio')
     audio = whisperx.load_audio(audio_file)
     result = model.transcribe(audio, batch_size=batch_size, language='en')
+    if len(result["segments"])==0:
+        return ''
     print('printing transcription\n-----------')
     print(result["segments"][0]['text']) # before alignment
 
@@ -127,7 +130,8 @@ def speak_reply(text_response):
         "Accept-Encoding": "identity"
     }
     
-    chunks = chunk_text(text_response)
+    #chunks = chunk_text(text_response)
+    chunks = sent_tokenize(text_response)
     for chunk in chunks:
         if len(chunk) == 0:
             continue
@@ -165,7 +169,10 @@ if __name__ == "__main__":
             output_filename = f"output_{timestamp}.wav"
             record_audio(output_filename)
             transcription = transcribe_audio(output_filename) # load recording and transcribe to text file
-            text_response = format_request(transcription) # append text file to llm conversation history, send api request
-            speak_reply(text_response) # convert request response to speech
+            if len(transcription) == 0:
+                continue
+            else:
+                text_response = format_request(transcription) # append text file to llm conversation history, send api request
+                speak_reply(text_response) # convert request response to speech
     except KeyboardInterrupt:
         print("\nRecording loop stopped by user.")
